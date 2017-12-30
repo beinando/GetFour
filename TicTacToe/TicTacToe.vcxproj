@@ -150,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Connector.h" />
+    <ClInclude Include="GeneralFunctions.h" />
     <ClInclude Include="GraphicFunctions.h" />
     <ClInclude Include="Net.h" />
     <ClInclude Include="Neuron.h" />

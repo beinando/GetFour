@@ -6,29 +6,30 @@ namespace graphic_functions {
 
 
 	vector<vector<sf::Sprite>> board;
-	sf::Texture _t1, _cross, _circle;
+	sf::Texture _t1, _cross, _circle, _troll;
 
 
 	void load_textures() {
 		_t1.loadFromFile("images/Field.png");
 		_cross.loadFromFile("images/Cross.png");
 		_circle.loadFromFile("images/Circle.png");
+		_troll.loadFromFile("images/troll.png");
 	
 
 	}
 
 	
 
-	void init_board_graphics(int size, int _pixel_field) {
+	void init_board_graphics(int height, int width, int _pixel_field) {
 
 
 		//init vector for insert row-values
 		vector<sf::Sprite> help_vector;
 
 
-		for (int i = 0; i < size; i++) {
+		for (int i = 0; i < height; i++) {
 			help_vector.clear();
-			for (int j = 0; j < size; j++) {
+			for (int j = 0; j < width; j++) {
 
 				sf::Sprite insert_element;
 
@@ -48,10 +49,10 @@ namespace graphic_functions {
 
 
 
-	void draw_raw_board(sf::RenderWindow& window, int size) {
-		for (int i = 0; i < size; i++) {
+	void draw_raw_board(sf::RenderWindow& window, int height, int width) {
+		for (int i = 0; i < height; i++) {
 			vector<sf::Sprite> help_vec = graphic_functions::board[i];
-			for (int j = 0; j < size; j++) {
+			for (int j = 0; j < width; j++) {
 
 				window.draw(help_vec[j]);
 			}
