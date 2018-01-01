@@ -116,3 +116,19 @@ Neuron::Neuron(unsigned num_outputs, unsigned my_index)
 	m_my_index = my_index;
 
 }
+
+Neuron::Neuron(unsigned num_outputs, unsigned my_index, double i_weight, double i_delta_weight)
+{
+
+	for (unsigned c = 0; c < num_outputs; c++) {
+
+		m_output_weights.push_back(Connection());
+		m_output_weights.back().weight = i_weight;
+		m_output_weights.back().delta_weight = i_delta_weight;
+
+
+	}
+
+	m_my_index = my_index;
+
+}

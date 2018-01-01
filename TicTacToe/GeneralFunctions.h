@@ -1,4 +1,5 @@
 #pragma once
+#include <iomanip>
 
 struct BoardData {
 	vector<double> board_state;
@@ -12,8 +13,7 @@ struct BoardData {
 
 namespace general_functions{
 
-
-
+	
 
 	void sleep(int milliseconds) {
 
@@ -316,6 +316,136 @@ namespace general_functions{
 
 		return 0;
 
+	}
+
+	//**** WRITE / READ FROM / IN FILES
+
+	void write_in_file(vector<Layer> i_layers) {
+
+		ofstream out_file;
+		out_file.open("list.txt");
+		
+		int foo_1 = i_layers.size();
+
+		for (int layer_count = 0; layer_count < i_layers.size() - 1; layer_count++) {
+			out_file << "LAYER " << layer_count << "\n";
+			out_file << "******************************" << "\n";
+			//iterate through all neurons in specific layer
+			for (int neuron_count = 0; neuron_count < i_layers[layer_count].size(); neuron_count++) {
+				//iterate through all next possible neurons
+				int foo_2 = i_layers[layer_count].size();
+				for (int next_neuron_count = 0; next_neuron_count < i_layers[layer_count][neuron_count].m_output_weights.size(); next_neuron_count++){
+					int foo_3 = i_layers[layer_count][neuron_count].m_output_weights.size();
+					out_file << "LAYER:" << layer_count << "NEURON:" <<  neuron_count << "CON_NEURON:" << next_neuron_count << "WEIGHT:"  << setprecision(2) << fixed << i_layers[layer_count][neuron_count].m_output_weights[next_neuron_count].weight  << "DELTA WEIGHT" << setprecision(2) << fixed << i_layers[layer_count][neuron_count].m_output_weights[next_neuron_count].delta_weight <<"\n";
+				}
+			}
+
+		
+		}
+	
+
+		
+
+		//out_file << "neuron " << count << "weight " << values[values.size()][0].m_output_weights[0].m_output_val << "\n";
+
+
+		out_file.close();
+
+	}
+
+
+	void zeroes_in_file(vector<double> start_vector) {
+
+
+
+		ofstream out_file;
+		out_file.open("list.txt");
+
+		int count = 0;
+
+
+		while (count < start_vector.size())
+		{
+
+			out_file << 0.2 << "\n";
+			count++;
+		}
+
+
+		out_file.close();
+
+	}
+
+	//Read values
+	vector<string> read_from_file() {
+
+		vector<string> values;
+		ifstream in_file;
+		in_file.open("list.txt");
+
+		//check for error
+		if (in_file.fail()) {
+
+			cerr << "Error opening file" << endl;
+			exit(1);
+		}
+
+		//Layer ... 1 ... until next ... neuron ... 1... next neuron ... weight
+
+
+
+		int count = 0;
+		string dummy;
+		string line;
+		if (in_file.is_open())
+		{
+			while (getline(in_file, line))
+			{
+				values.push_back(line);
+				cout << line << '\n';
+			}
+			in_file.close();
+		}
+
+		//search through string vector
+		for (int i = 0; i < values.size(); i++) {
+			//search through single string
+			for (int j = 0; j < values[i].size(); j++) {
+
+				if (values[i][j] == ':') {
+					std::string layer_string = values[i].substr(j + 1, 1);
+					std::string neuron = values[i].substr(j + 9, 1);
+					std::string neuron2 = values[i].substr(j + 21, 1);
+					std::string weight1 = values[i].substr(j + 29, 4);
+					std::string weight2 = values[i].substr(j + 45, 4);
+					
+					double num = stod(weight2);
+					int foo = 0;
+				}
+				
+				
+
+
+			}
+
+			
+
+
+		}
+
+
+
+
+
+
+	/*	while (getline(myfile, line)) {
+
+			in_file >> dummy;
+			values.push_back(dummy);
+			count++;
+		}*/
+		//in_file.close();
+		return values;
 	}
 
 

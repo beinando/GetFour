@@ -18,6 +18,7 @@ class Neuron {
 
 public:
 	Neuron(unsigned num_outputs, unsigned my_index);
+	Neuron(unsigned num_outputs, unsigned my_index, double i_weight, double i_delta_weight);
 	void set_output_val(double val) { m_output_val = val; };
 	double get_output_val(void) const { return m_output_val; };
 	void feed_forward(const Layer &prev_layer);

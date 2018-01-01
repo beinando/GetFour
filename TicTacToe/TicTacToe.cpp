@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <fstream>
+#include <stdlib.h>
 #include <sstream>
 #include "Net.h"
 #include "TrainingData.h"
@@ -18,6 +19,7 @@
 #include <Windows.h>
 #include "GraphicFunctions.h"
 #include "GeneralFunctions.h"
+#include <iomanip>
 
 
 
@@ -29,8 +31,8 @@ using namespace graphic_functions;
 
 int main() {
 
-
-
+	
+	
 
 	double x = rotate_x(-1, 0, 180);
 	cout << "x: " << x << endl;
@@ -50,12 +52,36 @@ int main() {
 	graphic_functions::draw_raw_board(window, 7, 6);
 
 	//****************for neural net********************************
-	vector<unsigned> topology = { 9,9,9,1 };
+	vector<unsigned> topology = { 2,4,1 };
 	Net my_net(topology);
 	Net my_net2(topology);
 	vector<double> input_vals, target_vals, result_vals;
 	vector<double> input_vals2, target_vals2, result_vals2;
 	int training_pass = 0;
+
+
+	//for test output
+
+	write_in_file(my_net.m_layers);
+
+	read_from_file();
+	/*for (int layer = 0; layer < topology.size() - 1; layer++) {
+		cout << "Layer: " << layer << endl;
+		
+		for (int neuron = 0; neuron < my_net.m_layers[layer].size() - 1; neuron++) {
+			cout << "Neuron: " << neuron << endl;
+			for (int neuron2 = 0; neuron2 < my_net.m_layers[layer + 1].size() - 1; neuron2++) {
+
+
+				cout << " next Neuron: " << neuron2 << " weight: " << my_net.m_layers[layer][neuron].m_output_weights[neuron2].weight << endl;
+			}
+
+		}*/
+
+
+	//}
+	// end for test output
+
 
 	//****************for neural net********************************
 
@@ -114,8 +140,7 @@ int main() {
 		sf::Event e;
 		int move = 0;
 		int win = 0;
-
-		
+	
 		sprites.clear();
 		board_all_states.clear();
 		occupied_fields.clear();
@@ -142,12 +167,7 @@ int main() {
 
 		}
 		
-	
-
-
-
 		while( move< 42) {
-
 
 			free_col.clear();
 			free_fields.clear();
@@ -214,8 +234,6 @@ int main() {
 				}
 			}
 
-		
-
 				//dummy sprite generated to fill into <vector<sprite>>-container
 				Sprite helpsprite = Sprite();
 				Sprite helpsprite2 = Sprite();
@@ -234,70 +252,64 @@ int main() {
 						}
 					}
 
-
-					
-
-
-
-
-
 					col_rand = generate_random_number(0, free_col.size()-1);
 					col_rand = free_col[col_rand];
-
-
-					for (int r = 5; r >= 0; r--) {
-						if (occupied_fields[r * 7 + col_rand] == false) {
-							helpsprite2.setPosition(col_rand * 150, r * 150);
-							helpsprite2.setTexture(_circle);
-							occupied_fields[r * 7 + col_rand] = true;
-							//******input into the board_state structue +1 = cross -1 = circle
-							board_state[r * 7 + col_rand] = -1;
+					vector<double> possible_next_state;
+					vector<int> possible_indices;
+					possible_indices.clear();
+					for (int c = 0; c < 7; c++) {
 						
-							break;
+						
+						for (int r = 5; r >= 0; r--) {
+							
+							if (occupied_fields[r * 7 + c] == false) {
+								
+								
+								//******input into the board_state structue +1 = cross -1 = circle
+								possible_indices.push_back(r * 7 + c);
+								
+								break;
+							}
 						}
 					}
 
+					//generate random number for selecting one state out of all possible states
+					int random_num = generate_random_number(0, possible_indices.size()-1);
+					board_state[possible_indices[random_num]] = -1;
+					occupied_fields[possible_indices[random_num]] = true;
+					//set sprite for graphical output
+		
+					int foo_x = possible_indices[random_num] % 7;
+					int foo_y = possible_indices[random_num] / 7;
+
+					helpsprite2.setPosition(foo_x*150, foo_y*150);
+					helpsprite2.setTexture(_circle);
+
+					int stop = 1;
 
 
 					 win = check_for_win(board_state);
-
-					
-					
-			
-					
-
-
-
-					
-
-				
 					
 					// next player will only count up
 
 					move++;
 
-
 					Sprite Troll = Sprite();
 					Troll.setTexture(_troll);
 					Troll.setPosition(150, 3 * 150);
-
-					
 
 					sprites.push_back(helpsprite);
 					sprites.push_back(helpsprite2);
 					board_all_states.push_back(board_state);
 					BoardData insert_state;
 
-
 					//insert states into the database
 					int dummy = 0;
 					for (int i = 0; i < board_data_base.size(); i++) {
 
 						if (board_state == board_data_base[i].board_state) {
-
 							board_data_base[i].times_played++;
 							break;
-
 						}
 						else if (i == board_data_base.size() - 1) {
 							dummy++;
@@ -305,20 +317,12 @@ int main() {
 							insert_state.times_played = 1;
 							insert_state.value = 0;
 							board_data_base.push_back(insert_state);
-
-							//cout << tester << endl;
 						}
 					}
 
 					
 					select_player++;
-				/*	graphic_functions::draw_raw_board(window, 7, 6);
-					graphic_functions::draw_figures(window, sprites);
-					window.draw(Troll);
-					window.display();
-					sleep(2000);
-					window.clear();
-					sprites.push_back(helpsprite2);*/
+				
 					graphic_functions::draw_raw_board(window, 7, 6);
 					graphic_functions::draw_figures(window, sprites);
 					
@@ -326,11 +330,87 @@ int main() {
 					window.display();
 					window.clear();
 
-					if (win != 0) {
+					if (win == -1) {
+
+						BoardData last_state;
+						int number_of_states = board_all_states.size();
+						for (int i = 0; i < number_of_states; i++) {
+							
+								last_state.board_state = board_all_states[board_all_states.size() - 1 - i];
+								last_state.value = +1 - (double(i) / number_of_states);
+								board_data_base[board_data_base.size()-1].value = last_state.value;
+							
+						}
 						//break single game loop (until 42)
 						break;
+
+
 					}
-	
+					//else if (who_won == -1) {
+
+					//	BoardData last_state;
+					//	int number_of_states = board_all_states.size();
+
+					//	for (int i = 0; i < number_of_states; i++) {
+					//		target_vals.clear();
+					//		//setting REWARDS for the former states
+					//		last_state.board_state = board_all_states[board_all_states.size() - 1 - i];
+
+					//		for (int data_base_index = 0; data_base_index < board_data_base.size(); data_base_index++) {
+
+					//			if (last_state.board_state == board_data_base[data_base_index].board_state) {
+					//				last_state.value = -1 + (double(i) / number_of_states);
+					//				//update values depending on former value
+					//				last_state.value = board_data_base[data_base_index].value + force*(-board_data_base[data_base_index].value + last_state.value);
+					//				board_data_base[data_base_index].value = last_state.value;
+					//				break;
+					//			}
+					//			else if (data_base_index == board_data_base.size()) {
+
+					//				last_state.value = -1 + (double(i) / number_of_states);
+					//				board_data_base[data_base_index].value = last_state.value;
+
+					//			}
+					//		}
+
+
+
+					//		input_vals = last_state.board_state;
+
+					//		cout << "*********************************************" << endl;
+					//		show_vector_vals(": inputs:", input_vals);
+
+					//		my_net.feed_forward(input_vals);
+
+					//		my_net.get_results(result_vals);
+
+					//		show_vector_vals("Outputs: ", result_vals);
+
+					//		target_vals.push_back(last_state.value);
+
+					//		show_vector_vals("Targets: ", target_vals);
+
+					//		assert(target_vals.size() == topology.back());
+
+					//		my_net.back_prop(target_vals);
+
+					//		cout << "Net recent average error: "
+					//			<< my_net.get_recent_average_error() << endl;
+					//		cout << "Done!" << endl;
+
+
+					//	}
+
+
+					//	crosswon++;
+
+
+
+
+					//	break;
+					//}
+
+
 					
 				}
 
