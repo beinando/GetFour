@@ -137,7 +137,7 @@ Net::Net(const vector<unsigned> &topology)
 		m_layers.push_back(Layer());
 		//We have made a new layer, now fill it with neurons, 
 		//and a bias neuron to the layer:
-		for (unsigned neuron_num = 0; neuron_num < topology[layer_num]; neuron_num++) {
+		for (unsigned neuron_num = 0; neuron_num <= topology[layer_num]; neuron_num++) {
 			//create random neuron 
 			m_layers.back().push_back(Neuron(num_outputs, neuron_num));
 			//cout << "made a neuron!" << endl;

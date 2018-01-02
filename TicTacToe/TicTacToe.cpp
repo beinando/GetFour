@@ -6,8 +6,6 @@
 #include <fstream>
 #include <stdlib.h>
 #include <sstream>
-#include "Net.h"
-#include "TrainingData.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <time.h>
@@ -17,10 +15,14 @@
 #include <thread>
 #include <string>
 #include <Windows.h>
-#include "GraphicFunctions.h"
-#include "GeneralFunctions.h"
+#include <iomanip>
+#include <tuple>
 #include <iomanip>
 
+#include "Net.h"
+#include "TrainingData.h"
+#include "GraphicFunctions.h"
+#include "GeneralFunctions.h"
 
 
 using namespace sf;
@@ -52,7 +54,7 @@ int main() {
 	graphic_functions::draw_raw_board(window, 7, 6);
 
 	//****************for neural net********************************
-	vector<unsigned> topology = { 2,4,1 };
+	vector<unsigned> topology = { 42,63,1 };
 	Net my_net(topology);
 	Net my_net2(topology);
 	vector<double> input_vals, target_vals, result_vals;
@@ -60,27 +62,14 @@ int main() {
 	int training_pass = 0;
 
 
+
 	//for test output
-
-	write_in_file(my_net.m_layers);
-
-	read_from_file();
-	/*for (int layer = 0; layer < topology.size() - 1; layer++) {
-		cout << "Layer: " << layer << endl;
-		
-		for (int neuron = 0; neuron < my_net.m_layers[layer].size() - 1; neuron++) {
-			cout << "Neuron: " << neuron << endl;
-			for (int neuron2 = 0; neuron2 < my_net.m_layers[layer + 1].size() - 1; neuron2++) {
+	//write_in_file(my_net.m_layers, "list.txt");
+	//Net compare_net = read_from_file(my_net);
+	//write_in_file(my_net.m_layers, "list2.txt");
 
 
-				cout << " next Neuron: " << neuron2 << " weight: " << my_net.m_layers[layer][neuron].m_output_weights[neuron2].weight << endl;
-			}
 
-		}*/
-
-
-	//}
-	// end for test output
 
 
 	//****************for neural net********************************
@@ -106,7 +95,7 @@ int main() {
 	//current board state
 	vector<double> board_state;
 	//container for all states during one game
-	vector<vector<double>> board_all_states;
+	vector<BoardData> board_all_states;
 	vector<Sprite> sprites;
 	
 	vector<BoardData> board_data_base;
@@ -116,7 +105,7 @@ int main() {
 	static int circlewon = 0;
 
 	BoardData start_state;
-	start_state.board_state = { 0,0,0,0,0,0,0,0,0 };
+	start_state.board_state = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	start_state.value = 0;
 	start_state.value2 = 0;
 	start_state.times_played = 0;
@@ -210,7 +199,7 @@ int main() {
 				case sf::Event::Closed:
 					window.close();
 					break;
-				case sf::Event::MouseButtonReleased:
+				/*case sf::Event::MouseButtonReleased:
 					int x = e.mouseButton.x;
 					int y = e.mouseButton.y;
 				
@@ -230,32 +219,54 @@ int main() {
 							block_next_step = 1;
 
 						}
-					}
+					}*/
 				}
 			}
 
+
+			block_next_step = 0;
 				//dummy sprite generated to fill into <vector<sprite>>-container
 				Sprite helpsprite = Sprite();
 				Sprite helpsprite2 = Sprite();
+				vector<double> possible_next_state;
+				vector<int> possible_indices;
 
 				if(block_next_step==0){
 					
-					//*************************input move*************
-					for (int r = 5; r >= 0; r--) {
-						if (occupied_fields[r * 7 + col] == false) {
-							helpsprite.setPosition(col * 150, r * 150);
-							helpsprite.setTexture(_cross);
-							occupied_fields[r * 7 + col] = true;
-							//******input into the board_state structue +1 = cross -1 = circle
-							board_state[r * 7 + col] = +1;
-							break;
+					for (int c = 0; c < 7; c++) {
+
+
+						for (int r = 5; r >= 0; r--) {
+
+							if (occupied_fields[r * 7 + c] == false) {
+
+
+								//******input into the board_state structue +1 = cross -1 = circle
+								possible_indices.push_back(r * 7 + c);
+
+								break;
+							}
 						}
 					}
 
+					//generate random number for selecting one state out of all possible states
+					int random_num = generate_random_number(0, possible_indices.size() - 1);
+					board_state[possible_indices[random_num]] = -1;
+					occupied_fields[possible_indices[random_num]] = true;
+					//set sprite for graphical output
+
+					int foo_x = possible_indices[random_num] % 7;
+					int foo_y = possible_indices[random_num] / 7;
+
+					helpsprite.setPosition(foo_x * 150, foo_y * 150);
+					helpsprite.setTexture(_cross);
+
+
+
+
 					col_rand = generate_random_number(0, free_col.size()-1);
 					col_rand = free_col[col_rand];
-					vector<double> possible_next_state;
-					vector<int> possible_indices;
+				
 					possible_indices.clear();
 					for (int c = 0; c < 7; c++) {
 						
@@ -264,23 +275,56 @@ int main() {
 							
 							if (occupied_fields[r * 7 + c] == false) {
 								
-								
+								possible_next_state = board_state;
+								possible_next_state[r * 7 + c] = -1;
 								//******input into the board_state structue +1 = cross -1 = circle
 								possible_indices.push_back(r * 7 + c);
+								possible_states.push_back(possible_next_state);
 								
 								break;
 							}
 						}
 					}
 
+					int max = -1e7;
+					int max_index;
+					//search possible states for values
+					for (int i = 0; i < possible_states.size(); i++) {
+						//search in database
+					
+
+
+						input_vals = possible_states[i];
+						my_net.feed_forward(input_vals);
+						my_net.get_results(result_vals);
+
+						if (result_vals[0] > max) {
+
+							max = result_vals[0];
+							max_index = possible_indices[i];
+
+						}
+							
+					
+					}
+
+				
+					//possible indices and possible states are logically connected possible state[i] <-> possible_indices[i] (the last inserted index)
+					occupied_fields[max_index] = true;
+
+					board_state[max_index] = 1;
+
+					occupied_fields[max_index] = true;
+
+
 					//generate random number for selecting one state out of all possible states
-					int random_num = generate_random_number(0, possible_indices.size()-1);
+					/*int random_num = generate_random_number(0, possible_indices.size()-1);
 					board_state[possible_indices[random_num]] = -1;
-					occupied_fields[possible_indices[random_num]] = true;
+					occupied_fields[possible_indices[random_num]] = true;*/
 					//set sprite for graphical output
 		
-					int foo_x = possible_indices[random_num] % 7;
-					int foo_y = possible_indices[random_num] / 7;
+					foo_x = max_index % 7;
+					foo_y = max_index / 7;
 
 					helpsprite2.setPosition(foo_x*150, foo_y*150);
 					helpsprite2.setTexture(_circle);
@@ -288,19 +332,25 @@ int main() {
 					int stop = 1;
 
 
-					 win = check_for_win(board_state);
+					
 					
 					// next player will only count up
 
 					move++;
 
-					Sprite Troll = Sprite();
+				/*	Sprite Troll = Sprite();
 					Troll.setTexture(_troll);
-					Troll.setPosition(150, 3 * 150);
+					Troll.setPosition(150, 3 * 150);*/
 
 					sprites.push_back(helpsprite);
 					sprites.push_back(helpsprite2);
-					board_all_states.push_back(board_state);
+
+					board_all_states.push_back(BoardData());
+					//this looks complicated... in order to fill the _active_ board states into the all board states-vector, first push_back an empty object, then fill the board_state part the object with the current board_state
+					//ATTENTION: board_state is a part the struct BoardData, but also the current state in this program
+					board_all_states[board_all_states.size()-1].board_state = board_state;
+					
+					
 					BoardData insert_state;
 
 					//insert states into the database
@@ -321,22 +371,30 @@ int main() {
 					}
 
 					
+
 					select_player++;
 				
 					graphic_functions::draw_raw_board(window, 7, 6);
 					graphic_functions::draw_figures(window, sprites);
 					
-
+					sleep(100);
 					window.display();
 					window.clear();
 
-					if (win == -1) {
+					win = check_for_win(board_state);
+					auto board_states_summarized = update_database(win,board_all_states,board_data_base);
+					board_data_base = std::get<0>(board_states_summarized);
+					board_all_states = std::get<1>(board_states_summarized);
+
+					my_net = update_net(board_all_states, board_data_base, my_net, topology);
+
+					if (win != 0) {
 
 						BoardData last_state;
 						int number_of_states = board_all_states.size();
 						for (int i = 0; i < number_of_states; i++) {
 							
-								last_state.board_state = board_all_states[board_all_states.size() - 1 - i];
+								last_state.board_state = board_all_states[board_all_states.size() - 1 - i].board_state;
 								last_state.value = +1 - (double(i) / number_of_states);
 								board_data_base[board_data_base.size()-1].value = last_state.value;
 							

@@ -1,5 +1,5 @@
 #pragma once
-#include <iomanip>
+
 
 struct BoardData {
 	vector<double> board_state;
@@ -320,10 +320,10 @@ namespace general_functions{
 
 	//**** WRITE / READ FROM / IN FILES
 
-	void write_in_file(vector<Layer> i_layers) {
+	void write_in_file(vector<Layer> i_layers, string output_file) {
 
 		ofstream out_file;
-		out_file.open("list.txt");
+		out_file.open(output_file);
 		
 		int foo_1 = i_layers.size();
 
@@ -336,7 +336,7 @@ namespace general_functions{
 				int foo_2 = i_layers[layer_count].size();
 				for (int next_neuron_count = 0; next_neuron_count < i_layers[layer_count][neuron_count].m_output_weights.size(); next_neuron_count++){
 					int foo_3 = i_layers[layer_count][neuron_count].m_output_weights.size();
-					out_file << "LAYER:" << layer_count << "NEURON:" <<  neuron_count << "CON_NEURON:" << next_neuron_count << "WEIGHT:"  << setprecision(2) << fixed << i_layers[layer_count][neuron_count].m_output_weights[next_neuron_count].weight  << "DELTA WEIGHT" << setprecision(2) << fixed << i_layers[layer_count][neuron_count].m_output_weights[next_neuron_count].delta_weight <<"\n";
+					out_file << "LAYER:" << layer_count << "NEURON " <<  neuron_count << "CON_NEURON " << next_neuron_count << "WEIGHT "  << setprecision(2) << fixed << i_layers[layer_count][neuron_count].m_output_weights[next_neuron_count].weight  << "DELTA WEIGHT " << setprecision(2) << fixed << i_layers[layer_count][neuron_count].m_output_weights[next_neuron_count].delta_weight <<"\n";
 				}
 			}
 
@@ -377,10 +377,14 @@ namespace general_functions{
 	}
 
 	//Read values
-	vector<string> read_from_file() {
+	Net read_from_file(Net i_net) {
+
 
 		vector<string> values;
 		ifstream in_file;
+		int old_intern_neuron_num=-1;
+		Neuron intern_neuron = Neuron(0,0);
+
 		in_file.open("list.txt");
 
 		//check for error
@@ -397,6 +401,7 @@ namespace general_functions{
 		int count = 0;
 		string dummy;
 		string line;
+
 		if (in_file.is_open())
 		{
 			while (getline(in_file, line))
@@ -417,36 +422,169 @@ namespace general_functions{
 					std::string neuron = values[i].substr(j + 9, 1);
 					std::string neuron2 = values[i].substr(j + 21, 1);
 					std::string weight1 = values[i].substr(j + 29, 4);
-					std::string weight2 = values[i].substr(j + 45, 4);
-					
-					double num = stod(weight2);
-					int foo = 0;
+std::string weight2 = values[i].substr(j + 46, 4);
+
+
+int intern_layer_num = stoi(layer_string);
+int intern_neuron_num = stoi(neuron);
+int intern_neuron2_num = stoi(neuron2);
+
+double intern_weight = stod(weight1);
+double intern_delta_weight = stod(weight2);
+
+if (intern_neuron_num != old_intern_neuron_num) {
+
+	intern_neuron = Neuron(i_net.m_layers[intern_layer_num + 1].size(), intern_neuron_num);
+
+}
+
+
+intern_neuron.m_output_weights[intern_neuron2_num].weight = intern_weight;
+intern_neuron.m_output_weights[intern_neuron2_num].delta_weight = intern_delta_weight;
+
+i_net.m_layers[intern_layer_num][intern_neuron_num] = intern_neuron;
+
+//old_intern for checking if new neuron index comes next
+old_intern_neuron_num = intern_neuron_num;
+
+
+
 				}
-				
-				
+
+
 
 
 			}
 
-			
+
 
 
 		}
 
+		return i_net;
 
 
-
-
-
-	/*	while (getline(myfile, line)) {
-
-			in_file >> dummy;
-			values.push_back(dummy);
-			count++;
-		}*/
-		//in_file.close();
-		return values;
 	}
+
+
+
+
+
+	std::tuple<vector<BoardData>, vector<BoardData>> update_database(int i_win, vector<BoardData> &i_board_all_states, vector<BoardData> &i_board_data_base) {
+
+		int dummy = 0;
+
+
+		if (i_win == 1) {
+
+			BoardData last_state;
+			int number_of_states = i_board_all_states.size();
+
+			for (int i = 0; i < number_of_states; i++) {
+
+				//setting REWARDS for the former states
+
+
+				last_state.value = 1 - (double(i) / number_of_states);
+				for (int data_base_index = 0; data_base_index < i_board_data_base.size() - dummy; data_base_index++) {
+
+					if (last_state.board_state == i_board_data_base[data_base_index].board_state) {
+
+						////update values depending on former value
+						i_board_all_states[i_board_all_states.size() - 1 - i].value = (i_board_data_base[data_base_index].value + last_state.value) / 2;
+						i_board_data_base[data_base_index].value = i_board_all_states[i_board_all_states.size() - 1 - i].value;
+
+						break;
+					}
+					else if (data_base_index == i_board_data_base.size() - dummy) {
+
+						i_board_all_states[i_board_all_states.size() - 1 - i].value = 1 - (double(i) / number_of_states);
+						i_board_data_base[data_base_index].value = last_state.value;
+
+					}
+				}
+
+
+
+			}
+		}
+
+		return std::make_tuple(i_board_data_base, i_board_all_states);
+
+
+	}
+
+
+	Net update_net(vector<BoardData> &i_board_all_states, vector<BoardData> &i_board_data_base, Net &i_net, vector<unsigned> &i_topology) {
+
+		vector<double> input_vals;
+		vector<double> target_vals;
+		vector<double> result_vals;
+
+		//iterate over all states played in this game
+		for (int i = 0; i < i_board_all_states.size(); i++){
+			target_vals.clear();
+
+			input_vals = i_board_all_states[i].board_state;
+			//feed forward
+			i_net.feed_forward(input_vals);
+			i_net.get_results(result_vals);
+			target_vals.push_back(i_board_all_states[i].value);
+
+			assert(target_vals.size() == i_topology.back());
+			//back projection
+			i_net.back_prop(target_vals);
+
+			//output
+			std::cout << "*********************************************" << endl;
+			show_vector_vals(": inputs:", input_vals);
+
+
+
+		}
+		
+
+
+
+		return i_net;
+	}
+
+		/*		vector<double> input_vals;
+				vector<double> target_vals;
+				vector<double> result_vals;
+
+
+				input_vals = last_state.board_state;
+
+				std::cout << "*********************************************" << endl;
+				show_vector_vals(": inputs:", input_vals);
+
+				i_my_net.feed_forward(input_vals);
+
+				i_my_net.get_results(result_vals);
+
+				show_vector_vals("Outputs: ", result_vals);
+
+				target_vals.push_back(last_state.value);
+
+				show_vector_vals("Targets: ", target_vals);
+
+				assert(target_vals.size() == i_topology.back());
+
+				i_my_net.back_prop(target_vals);
+
+				cout << "Net recent average error: "
+					<< i_my_net.get_recent_average_error() << endl;
+				cout << "Done!" << endl;
+
+
+			}*/
+
+			
+
+
+
+
 
 
 
